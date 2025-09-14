@@ -64,6 +64,36 @@
   }
 }
 
+/* Fullscreen styles */
+body.fullscreen {
+  background: #000;
+}
+
+body.fullscreen .mobile-frame {
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
+body.fullscreen .mobile-screen {
+  border-radius: 0;
+}
+
+body.fullscreen #canvasContainer {
+  bottom: 0;
+}
+
+body.fullscreen .mobile-nav {
+  display: none;
+}
+
+body.fullscreen #fullscreenBtn {
+  background: rgba(30,39,56,0.9);
+  color: #88c0ff;
+}
+
 /* Hide desktop sidebar on mobile */
 #sidebarWrapper {
   display: none !important;
@@ -144,33 +174,6 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 500;
-}
-
-/* Toggle State Border */
-.toggle-border {
-  position: fixed;
-  inset: 0;
-  border: 6px solid transparent;
-  border-radius: 0;
-  pointer-events: none;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 99;
-}
-
-@media (min-width: 768px) {
-  .toggle-border {
-    border-radius: 28px;
-  }
-}
-
-.toggle-border.on {
-  border-color: #4ade80;
-  box-shadow: inset 0 0 40px rgba(74,222,128,0.3), 0 0 60px rgba(74,222,128,0.2);
-}
-
-.toggle-border.off {
-  border-color: #ef4444;
-  box-shadow: inset 0 0 40px rgba(239,68,68,0.3), 0 0 60px rgba(239,68,68,0.2);
 }
 
 /* Value Editor Modal */
@@ -338,6 +341,9 @@
 /* Control Groups in Panels */
 .control-group-mobile {
   margin-bottom: 24px;
+  padding: 16px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 12px;
 }
 
 .control-row-mobile {
@@ -346,6 +352,10 @@
   justify-content: space-between;
   padding: 12px 0;
   border-bottom: 1px solid var(--border);
+}
+
+.control-row-mobile:last-child {
+  border-bottom: none;
 }
 
 .control-label-mobile {
@@ -409,35 +419,29 @@
   border: 2px solid var(--border);
 }
 
-/* Slider Controls */
-.slider-control-mobile {
+/* Mode Selector */
+.mode-selector {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 12px 0;
+  gap: 8px;
+  margin-top: 12px;
 }
 
-.slider-mobile {
+.mode-btn {
   flex: 1;
-  height: 6px;
-  background: var(--slider-bg);
-  border-radius: 3px;
-  -webkit-appearance: none;
-  appearance: none;
-}
-
-.slider-mobile::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 24px;
-  height: 24px;
-  background: var(--accent);
-  border-radius: 50%;
+  padding: 10px;
+  background: var(--btn);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  color: var(--fg);
+  font-size: 12px;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-/* Hide unnecessary elements */
-.modal, .side-panel {
-  display: none !important;
+.mode-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
 }
 
 /* Action Buttons */
@@ -458,14 +462,17 @@
 .action-btn:active {
   transform: scale(0.98);
 }
+
+/* Hide unnecessary elements */
+.modal, .side-panel {
+  display: none !important;
+}
 </style>
 </head>
 <body>
   <div class="mobile-frame">
     <div class="mobile-screen">
       <div id="appContainer">
-        <!-- Toggle State Border -->
-        <div class="toggle-border" id="toggleBorder"></div>
         
         <!-- Canvas Container -->
         <div id="canvasContainer">
@@ -488,7 +495,7 @@
             <span class="nav-label">Grid</span>
           </button>
           <button class="nav-button" data-control="color" onclick="selectControl('color')">
-            <span class="nav-icon">◐</span>
+            <span class="nav-icon">◉</span>
             <span class="nav-label">Color</span>
           </button>
           <button class="nav-button" data-control="style" onclick="selectControl('style')">
@@ -530,11 +537,11 @@
             </div>
             <div class="control-row-mobile">
               <span class="control-label-mobile">First 2 Ligatures</span>
-              <div class="toggle-switch" id="firstTwoLigaturesToggle" onclick="toggleSwitch('firstTwoLigatures')"></div>
+              <div class="toggle-switch active" id="firstTwoLigaturesToggle" onclick="toggleSwitch('firstTwoLigatures')"></div>
             </div>
             <div class="control-row-mobile">
               <span class="control-label-mobile">Special Ligatures</span>
-              <div class="toggle-switch" id="specialLigaturesToggle" onclick="toggleSwitch('specialLigatures')"></div>
+              <div class="toggle-switch active" id="specialLigaturesToggle" onclick="toggleSwitch('specialLigatures')"></div>
             </div>
           </div>
         </div>
@@ -569,6 +576,18 @@
               <span class="control-label-mobile">Canvas Margin</span>
               <span class="control-value-mobile" id="marginValue">20</span>
             </div>
+            <div class="control-row-mobile">
+              <span class="control-label-mobile">Corner Mode</span>
+              <div class="toggle-switch" id="cornerModeToggle" onclick="toggleCornerMode()"></div>
+            </div>
+            <div class="control-row-mobile" onclick="editValue('chamfer', 0, 100, 40)">
+              <span class="control-label-mobile">Chamfer</span>
+              <span class="control-value-mobile" id="chamferValue">40</span>
+            </div>
+            <div class="control-row-mobile" onclick="editValue('bevel', 0, 100, 60)">
+              <span class="control-label-mobile">Bevel</span>
+              <span class="control-value-mobile" id="bevelValue">60%</span>
+            </div>
           </div>
         </div>
 
@@ -577,6 +596,21 @@
             <h3 class="panel-title">Color Settings</h3>
             <button class="panel-close" onclick="closePanel('colorPanel')">×</button>
           </div>
+          
+          <!-- Color Mode Selection -->
+          <div class="control-group-mobile">
+            <h4 style="color:var(--fg);margin-bottom:12px">Color Mode</h4>
+            <div class="mode-selector">
+              <button class="mode-btn active" id="colorModeBtn" onclick="setColorMode('color')">Color System</button>
+              <button class="mode-btn" id="singleModeBtn" onclick="setColorMode('single')">Single Color</button>
+            </div>
+            <div class="mode-selector" style="margin-top:8px">
+              <button class="mode-btn active" id="applyBgBtn" onclick="setApplyMode('background')">Apply to BG</button>
+              <button class="mode-btn" id="applyTextBtn" onclick="setApplyMode('text')">Apply to Text</button>
+            </div>
+          </div>
+
+          <!-- Canvas Background -->
           <div class="control-group-mobile">
             <div class="control-row-mobile">
               <span class="control-label-mobile">Canvas Background</span>
@@ -585,6 +619,11 @@
                 <div class="color-preview" id="bgPreview" style="background:#000000;"></div>
               </div>
             </div>
+          </div>
+
+          <!-- Color System Controls -->
+          <div class="control-group-mobile" id="colorSystemControls">
+            <h4 style="color:var(--fg);margin-bottom:12px">Color System</h4>
             <div class="control-row-mobile" onclick="editValue('hueCenter', 0, 100, 0)">
               <span class="control-label-mobile">Hue Center</span>
               <span class="control-value-mobile" id="hueCenterValue">0%</span>
@@ -597,9 +636,33 @@
               <span class="control-label-mobile">Saturation</span>
               <span class="control-value-mobile" id="saturationValue">70%</span>
             </div>
+            <div class="control-row-mobile" onclick="editValue('contrast', 0, 200, 50)">
+              <span class="control-label-mobile">Contrast</span>
+              <span class="control-value-mobile" id="contrastValue">50%</span>
+            </div>
             <div class="control-row-mobile" onclick="editValue('brightness', 0, 200, 50)">
               <span class="control-label-mobile">Brightness</span>
               <span class="control-value-mobile" id="brightnessValue">50%</span>
+            </div>
+          </div>
+
+          <!-- Single Color Controls -->
+          <div class="control-group-mobile" id="singleColorControls" style="display:none">
+            <h4 style="color:var(--fg);margin-bottom:12px">Single Color</h4>
+            <div class="control-row-mobile">
+              <span class="control-label-mobile">Tile Background</span>
+              <div class="color-picker-mobile">
+                <input type="color" id="cellBgColorPicker" class="picker" value="#000000">
+                <div class="color-preview" id="cellBgPreview" style="background:#000000;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tile Opacity -->
+          <div class="control-group-mobile">
+            <div class="control-row-mobile" onclick="editValue('tileOpacity', 0, 100, 100)">
+              <span class="control-label-mobile">Tile Opacity</span>
+              <span class="control-value-mobile" id="tileOpacityValue">100%</span>
             </div>
           </div>
         </div>
@@ -618,21 +681,21 @@
               <span class="control-label-mobile">Text Opacity</span>
               <span class="control-value-mobile" id="textOpacityValue">100%</span>
             </div>
+            <div class="control-row-mobile" onclick="editValue('overlayMargin', 0, 30, 5)">
+              <span class="control-label-mobile">Text Margin</span>
+              <span class="control-value-mobile" id="overlayMarginValue">5</span>
+            </div>
             <div class="control-row-mobile" onclick="editValue('firstThickness', 1, 20, 2)">
               <span class="control-label-mobile">Initial Weight</span>
               <span class="control-value-mobile" id="firstThicknessValue">2</span>
             </div>
             <div class="control-row-mobile">
-              <span class="control-label-mobile">Corner Mode</span>
-              <div class="toggle-switch" id="cornerModeToggle" onclick="toggleCornerMode()"></div>
+              <span class="control-label-mobile">Same as Initial</span>
+              <div class="toggle-switch active" id="syncOtherToggle" onclick="toggleSwitch('syncOtherToggle')"></div>
             </div>
-            <div class="control-row-mobile" onclick="editValue('chamfer', 0, 100, 40)">
-              <span class="control-label-mobile">Chamfer</span>
-              <span class="control-value-mobile" id="chamferValue">40</span>
-            </div>
-            <div class="control-row-mobile" onclick="editValue('bevel', 0, 100, 60)">
-              <span class="control-label-mobile">Bevel</span>
-              <span class="control-value-mobile" id="bevelValue">60%</span>
+            <div class="control-row-mobile" onclick="editValue('otherThickness', 1, 20, 2)">
+              <span class="control-label-mobile">Other Weight</span>
+              <span class="control-value-mobile" id="otherThicknessValue">2</span>
             </div>
           </div>
         </div>
@@ -655,7 +718,7 @@
     </div>
   </div>
 
-  <!-- Hidden elements for compatibility -->
+  <!-- Hidden elements for compatibility with desktop version -->
   <div style="display:none">
     <div id="sidebarWrapper"><div id="sidebar"></div></div>
     <div id="toggleWrapper"></div>
@@ -727,23 +790,19 @@
 
     // Control selection
     function selectControl(control) {
-      // Remove active state from all buttons
       document.querySelectorAll('.nav-button').forEach(btn => {
         btn.classList.remove('active');
       });
 
-      // Close any open panel
       if (activePanel) {
         closePanel(activePanel);
       }
 
-      // Set active button
       const button = document.querySelector(`[data-control="${control}"]`);
       if (button) {
         button.classList.add('active');
       }
 
-      // Open corresponding panel
       const panelMap = {
         'text': 'textPanel',
         'grid': 'gridPanel',
@@ -774,7 +833,6 @@
         panel.classList.remove('active');
       }
       
-      // Remove active state from buttons
       document.querySelectorAll('.nav-button').forEach(btn => {
         btn.classList.remove('active');
       });
@@ -783,11 +841,67 @@
       activeControl = null;
     }
 
-    // Value editing
+    // Color mode selection
+    function setColorMode(mode) {
+      const colorBtn = document.getElementById('colorModeBtn');
+      const singleBtn = document.getElementById('singleModeBtn');
+      const colorControls = document.getElementById('colorSystemControls');
+      const singleControls = document.getElementById('singleColorControls');
+      
+      if (mode === 'color') {
+        document.getElementById('bgModeColor').checked = true;
+        document.getElementById('bgModeSingle').checked = false;
+        colorBtn.classList.add('active');
+        singleBtn.classList.remove('active');
+        colorControls.style.display = 'block';
+        singleControls.style.display = 'none';
+      } else {
+        document.getElementById('bgModeSingle').checked = true;
+        document.getElementById('bgModeColor').checked = false;
+        singleBtn.classList.add('active');
+        colorBtn.classList.remove('active');
+        singleControls.style.display = 'block';
+        colorControls.style.display = 'none';
+      }
+      
+      document.getElementById('bgModeColor').dispatchEvent(new Event('change'));
+      document.getElementById('bgModeSingle').dispatchEvent(new Event('change'));
+      
+      if (window.generateGrid) {
+        window.currentCells = null;
+        window.generateGrid(true);
+      }
+    }
+
+    function setApplyMode(mode) {
+      const bgBtn = document.getElementById('applyBgBtn');
+      const textBtn = document.getElementById('applyTextBtn');
+      
+      if (mode === 'background') {
+        document.getElementById('applyBg').checked = true;
+        document.getElementById('applyText').checked = false;
+        bgBtn.classList.add('active');
+        textBtn.classList.remove('active');
+      } else {
+        document.getElementById('applyText').checked = true;
+        document.getElementById('applyBg').checked = false;
+        textBtn.classList.add('active');
+        bgBtn.classList.remove('active');
+      }
+      
+      document.getElementById('applyBg').dispatchEvent(new Event('change'));
+      document.getElementById('applyText').dispatchEvent(new Event('change'));
+      
+      if (window.generateGrid) {
+        window.currentCells = null;
+        window.generateGrid(true);
+      }
+    }
+
+    // Value editing with real-time updates
     function editValue(name, min, max, defaultValue) {
       currentEditConfig = { name, min, max, defaultValue };
       
-      // Get current value from corresponding slider
       const sliderMap = {
         'rows': 'rowSlider',
         'density': 'densitySlider',
@@ -795,50 +909,59 @@
         'padding': 'paddingSlider',
         'margin': 'marginSlider',
         'textOpacity': 'textOpacitySlider',
+        'overlayMargin': 'overlayMarginSlider',
         'firstThickness': 'firstThickness',
+        'otherThickness': 'otherThickness',
         'chamfer': 'chamferSlider',
         'bevel': 'bevelSlider',
         'hueCenter': 'hueCenter',
         'hueRadius': 'hueRadius',
         'saturation': 'saturationSlider',
-        'brightness': 'brightnessSlider'
+        'contrast': 'contrastSlider',
+        'brightness': 'brightnessSlider',
+        'tileOpacity': 'tileOpacitySlider'
       };
       
       const slider = document.getElementById(sliderMap[name]);
       const currentValue = slider ? slider.value : defaultValue;
       
-      // Show value modal
       const modal = document.getElementById('valueModal');
       const title = document.getElementById('valueTitle');
       const number = document.getElementById('valueNumber');
       
       title.textContent = name.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-      number.textContent = name === 'bevel' ? `${Math.round(currentValue * 100)}%` : 
-                          (name.includes('density') || name.includes('Width') || name.includes('Opacity') || 
-                           name.includes('hue') || name.includes('saturation') || name.includes('brightness')) ? 
-                          `${currentValue}%` : currentValue;
+      
+      const displayValue = getDisplayValue(name, currentValue);
+      number.textContent = displayValue;
       
       modal.classList.add('active');
-      
-      // Store initial value for dragging
       dragStartValue = parseFloat(currentValue);
+    }
+
+    function getDisplayValue(name, value) {
+      if (name === 'bevel') return `${Math.round(value * 100)}%`;
+      if (name.includes('density') || name.includes('Width') || name.includes('Opacity') || 
+          name.includes('hue') || name.includes('saturation') || name.includes('brightness') ||
+          name.includes('contrast') || name.includes('tileOpacity')) {
+        return `${Math.round(value)}%`;
+      }
+      return Math.round(value).toString();
     }
 
     // Toggle switches
     function toggleSwitch(name) {
       const toggle = document.getElementById(`${name}Toggle`);
-      const checkbox = document.getElementById(name);
+      const checkbox = document.getElementById(name.replace('Toggle', ''));
       
       if (toggle && checkbox) {
         checkbox.checked = !checkbox.checked;
         toggle.classList.toggle('active', checkbox.checked);
         
-        // Trigger change event
         checkbox.dispatchEvent(new Event('change'));
+        checkbox.dispatchEvent(new Event('input'));
         
-        // Regenerate if needed
         if (window.generateGrid) {
-          if (window.$('#autoRows') && window.$('#autoRows').checked) {
+          if (window.$ && window.$('#autoRows') && window.$('#autoRows').checked) {
             window.autoPickRowsAndRedraw();
           } else {
             window.currentCells = null;
@@ -864,7 +987,6 @@
         toggle.classList.add('active');
       }
       
-      // Trigger change event
       const evt = new Event('change');
       if (isBevel) {
         tileRadio.dispatchEvent(evt);
@@ -872,16 +994,31 @@
         bevelRadio.dispatchEvent(evt);
       }
       
-      // Show toggle border animation
-      const border = document.getElementById('toggleBorder');
-      border.classList.remove('on', 'off');
-      border.classList.add(isBevel ? 'off' : 'on');
-      setTimeout(() => {
-        border.classList.remove('on', 'off');
-      }, 800);
+      if (window.generateGrid) {
+        window.currentCells = null;
+        window.generateGrid(true);
+      }
     }
 
-    // Touch/drag handling for value editing
+    // Fullscreen functionality
+    function toggleFullscreen() {
+      document.body.classList.toggle('fullscreen');
+      const btn = document.getElementById('fullscreenBtn');
+      btn.textContent = document.body.classList.contains('fullscreen') ? '×' : '⛶';
+      
+      window.dispatchEvent(new Event('resize'));
+      setTimeout(() => {
+        if (window.applyCanvasSizingUI) {
+          window.applyCanvasSizingUI();
+        }
+        if (window.generateGrid) {
+          window.currentCells = null;
+          window.generateGrid(true);
+        }
+      }, 100);
+    }
+
+    // Touch/drag handling for real-time updates
     let touchStartX = 0;
     let touchStartY = 0;
 
@@ -899,7 +1036,6 @@
       touchStartY = e.touches[0].clientY;
       isDragging = true;
       
-      // Show touch ripple
       const ripple = document.getElementById('touchRipple');
       ripple.style.left = touchStartX + 'px';
       ripple.style.top = touchStartY + 'px';
@@ -908,19 +1044,7 @@
       e.preventDefault();
     }
 
-    function handleTouchMove(e) {
-      if (!isDragging || !currentEditConfig) return;
-      
-      const deltaX = e.touches[0].clientX - touchStartX;
-      const { name, min, max } = currentEditConfig;
-      
-      // Calculate new value based on drag distance
-      const range = max - min;
-      const sensitivity = range / 200; // 200px for full range
-      const change = deltaX * sensitivity;
-      const newValue = Math.max(min, Math.min(max, dragStartValue + change));
-      
-      // Update slider
+    function updateSliderRealtime(name, newValue) {
       const sliderMap = {
         'rows': 'rowSlider',
         'density': 'densitySlider',
@@ -928,34 +1052,50 @@
         'padding': 'paddingSlider',
         'margin': 'marginSlider',
         'textOpacity': 'textOpacitySlider',
+        'overlayMargin': 'overlayMarginSlider',
         'firstThickness': 'firstThickness',
+        'otherThickness': 'otherThickness',
         'chamfer': 'chamferSlider',
         'bevel': 'bevelSlider',
         'hueCenter': 'hueCenter',
         'hueRadius': 'hueRadius',
         'saturation': 'saturationSlider',
-        'brightness': 'brightnessSlider'
+        'contrast': 'contrastSlider',
+        'brightness': 'brightnessSlider',
+        'tileOpacity': 'tileOpacitySlider'
       };
       
       const slider = document.getElementById(sliderMap[name]);
       if (slider) {
         slider.value = newValue;
+        
+        // Trigger input event for real-time update
         slider.dispatchEvent(new Event('input'));
+        
+        // Update display
+        const displayValue = getDisplayValue(name, newValue);
+        document.getElementById('valueNumber').textContent = displayValue;
+        
+        // Update value in panel
+        const valueSpan = document.getElementById(`${name}Value`);
+        if (valueSpan) {
+          valueSpan.textContent = displayValue;
+        }
       }
+    }
+
+    function handleTouchMove(e) {
+      if (!isDragging || !currentEditConfig) return;
       
-      // Update display
-      const number = document.getElementById('valueNumber');
-      number.textContent = name === 'bevel' ? `${Math.round(newValue * 100)}%` : 
-                          (name.includes('density') || name.includes('Width') || name.includes('Opacity') || 
-                           name.includes('hue') || name.includes('saturation') || name.includes('brightness')) ? 
-                          `${Math.round(newValue)}%` : Math.round(newValue);
+      const deltaX = e.touches[0].clientX - touchStartX;
+      const { name, min, max } = currentEditConfig;
       
-      // Update value in panel
-      const valueSpan = document.getElementById(`${name}Value`);
-      if (valueSpan) {
-        valueSpan.textContent = number.textContent;
-      }
+      const range = max - min;
+      const sensitivity = range / 200;
+      const change = deltaX * sensitivity;
+      const newValue = Math.max(min, Math.min(max, dragStartValue + change));
       
+      updateSliderRealtime(name, newValue);
       e.preventDefault();
     }
 
@@ -964,11 +1104,9 @@
       
       isDragging = false;
       
-      // Hide touch ripple
       const ripple = document.getElementById('touchRipple');
       ripple.classList.remove('active');
       
-      // Hide value modal after a delay
       setTimeout(() => {
         const modal = document.getElementById('valueModal');
         modal.classList.remove('active');
@@ -997,39 +1135,7 @@
       const change = deltaX * sensitivity;
       const newValue = Math.max(min, Math.min(max, dragStartValue + change));
       
-      const sliderMap = {
-        'rows': 'rowSlider',
-        'density': 'densitySlider',
-        'doubleWidth': 'doubleWidthSlider',
-        'padding': 'paddingSlider',
-        'margin': 'marginSlider',
-        'textOpacity': 'textOpacitySlider',
-        'firstThickness': 'firstThickness',
-        'chamfer': 'chamferSlider',
-        'bevel': 'bevelSlider',
-        'hueCenter': 'hueCenter',
-        'hueRadius': 'hueRadius',
-        'saturation': 'saturationSlider',
-        'brightness': 'brightnessSlider'
-      };
-      
-      const slider = document.getElementById(sliderMap[name]);
-      if (slider) {
-        slider.value = newValue;
-        slider.dispatchEvent(new Event('input'));
-      }
-      
-      const number = document.getElementById('valueNumber');
-      number.textContent = name === 'bevel' ? `${Math.round(newValue * 100)}%` : 
-                          (name.includes('density') || name.includes('Width') || name.includes('Opacity') || 
-                           name.includes('hue') || name.includes('saturation') || name.includes('brightness')) ? 
-                          `${Math.round(newValue)}%` : Math.round(newValue);
-      
-      const valueSpan = document.getElementById(`${name}Value`);
-      if (valueSpan) {
-        valueSpan.textContent = number.textContent;
-      }
-      
+      updateSliderRealtime(name, newValue);
       e.preventDefault();
     }
 
@@ -1047,32 +1153,56 @@
       e.preventDefault();
     }
 
-    // Initialize UI state
+    // Initialize UI
     window.addEventListener('load', async () => {
-      // Wait for modules to load
-      await new Promise(resolve => setTimeout(resolve, 100));
+      console.log('Initializing mobile UI...');
       
-      // Initialize default text
+      // Wait for modules
+      let attempts = 0;
+      while ((!window.generateGrid || !window.initializeDynamicCharacters) && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      
+      if (!window.generateGrid) {
+        console.error('Main app modules not loaded!');
+        return;
+      }
+      
+      // Initialize text
       const textarea = document.getElementById('phraseInput');
       if (!textarea.value && window.DEFAULT_QUOTE) {
         textarea.value = window.DEFAULT_QUOTE;
       }
       
-      // Sync toggle states with checkboxes
-      document.getElementById('includeSpacesToggle').classList.toggle('active', document.getElementById('includeSpaces').checked);
-      document.getElementById('firstTwoLigaturesToggle').classList.toggle('active', document.getElementById('firstTwoLigatures').checked);
-      document.getElementById('specialLigaturesToggle').classList.toggle('active', document.getElementById('specialLigatures').checked);
-      document.getElementById('autoRowsToggle').classList.toggle('active', document.getElementById('autoRows').checked);
-      document.getElementById('overlayTextToggle').classList.toggle('active', document.getElementById('overlayText').checked);
+      // Sync toggle states
+      ['includeSpaces', 'firstTwoLigatures', 'specialLigatures', 'autoRows', 'overlayText', 'syncOtherToggle'].forEach(id => {
+        const checkbox = document.getElementById(id);
+        const toggle = document.getElementById(`${id}Toggle`);
+        if (checkbox && toggle) {
+          toggle.classList.toggle('active', checkbox.checked);
+        }
+      });
+      
       document.getElementById('cornerModeToggle').classList.toggle('active', document.getElementById('cornerBevel').checked);
       
-      // Update color previews
+      // Color pickers
       document.getElementById('bgColorPicker').addEventListener('input', (e) => {
         document.getElementById('bgPreview').style.background = e.target.value;
         document.getElementById('bgColorText').value = e.target.value;
+        document.getElementById('bgColorText').dispatchEvent(new Event('input'));
       });
       
-      // Initialize canvas sizing
+      document.getElementById('cellBgColorPicker').addEventListener('input', (e) => {
+        document.getElementById('cellBgPreview').style.background = e.target.value;
+        document.getElementById('cellBgColorText').value = e.target.value;
+        document.getElementById('cellBgColorText').dispatchEvent(new Event('input'));
+      });
+      
+      // Fullscreen button
+      document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
+      
+      // Initialize canvas
       if (window.applyCanvasSizingUI) {
         window.applyCanvasSizingUI();
       }
@@ -1082,23 +1212,32 @@
         await window.initializeDynamicCharacters();
       }
       
-      // Initialize corners if needed
-      if (typeof window.updateCornersDynamic === 'function') {
+      // Initialize corners
+      if (window.updateCornersDynamic) {
         window.updateCornersDynamic();
-        if (typeof window.setCornerMode === 'function') {
+        if (window.setCornerMode) {
           window.setCornerMode('tile');
         }
       }
       
-      // Auto pick rows and generate initial grid
-      if (window.autoPickRowsAndRedraw) {
-        window.autoPickRowsAndRedraw();
-      } else if (window.generateGrid) {
-        window.currentCells = null;
-        window.generateGrid(true);
-      }
+      // Textarea real-time updates
+      textarea.addEventListener('input', () => {
+        if (window.autoPickRowsAndRedraw) {
+          window.autoPickRowsAndRedraw();
+        }
+      });
       
-      // Regenerate on space key
+      // Generate initial grid
+      setTimeout(() => {
+        if (window.autoPickRowsAndRedraw) {
+          window.autoPickRowsAndRedraw();
+        } else if (window.generateGrid) {
+          window.currentCells = null;
+          window.generateGrid(true);
+        }
+      }, 500);
+      
+      // Space key regeneration
       document.addEventListener('keydown', (e) => {
         if (e.code === 'Space' && !e.target.matches('input,textarea')) {
           e.preventDefault();
@@ -1109,10 +1248,7 @@
         }
       });
       
-      // Handle textarea input changes
-      if (textarea && window.autoPickRowsAndRedraw) {
-        textarea.addEventListener('input', window.autoPickRowsAndRedraw);
-      }
+      console.log('Mobile UI initialized');
     });
   </script>
 
