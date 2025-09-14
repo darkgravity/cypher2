@@ -1,0 +1,1128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>Tessellated Bezier Text Tiles - Mobile</title>
+<link rel="stylesheet" href="dynamicStyles.css">
+<style>
+/* Mobile UI Styles */
+:root {
+  --mobile-width: 390px;
+  --mobile-height: 844px;
+  --bottom-nav-height: 90px;
+}
+
+/* Desktop Mobile Frame */
+@media (min-width: 768px) {
+  body {
+    background: #1a1a1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+  }
+  
+  .mobile-frame {
+    width: var(--mobile-width);
+    height: var(--mobile-height);
+    background: #000;
+    border-radius: 40px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8), inset 0 0 0 12px #2a2a2a;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .mobile-screen {
+    width: 100%;
+    height: 100%;
+    background: var(--app-bg);
+    border-radius: 28px;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  #appContainer {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+}
+
+@media (max-width: 767px) {
+  .mobile-frame, .mobile-screen {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+  }
+  
+  #appContainer {
+    width: 100vw;
+    height: 100vh;
+  }
+}
+
+/* Hide desktop sidebar on mobile */
+#sidebarWrapper {
+  display: none !important;
+}
+
+#toggleWrapper {
+  display: none !important;
+}
+
+/* Mobile Canvas Container */
+#canvasContainer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: var(--bottom-nav-height);
+  background: var(--app-bg);
+  overflow: hidden;
+}
+
+/* Mobile Bottom Navigation */
+.mobile-nav {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--bottom-nav-height);
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 10px 15px;
+  z-index: 100;
+}
+
+.nav-button {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--btn);
+  border: 2px solid var(--border);
+  color: var(--fg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  touch-action: manipulation;
+}
+
+.nav-button:active {
+  transform: scale(0.95);
+}
+
+.nav-button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  transform: scale(1.1);
+  box-shadow: 0 4px 20px rgba(136,192,255,0.5);
+}
+
+.nav-button.active .nav-icon,
+.nav-button.active .nav-label {
+  color: var(--bg);
+  font-weight: 600;
+}
+
+.nav-icon {
+  font-size: 22px;
+  margin-bottom: 2px;
+}
+
+.nav-label {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+/* Toggle State Border */
+.toggle-border {
+  position: fixed;
+  inset: 0;
+  border: 6px solid transparent;
+  border-radius: 0;
+  pointer-events: none;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 99;
+}
+
+@media (min-width: 768px) {
+  .toggle-border {
+    border-radius: 28px;
+  }
+}
+
+.toggle-border.on {
+  border-color: #4ade80;
+  box-shadow: inset 0 0 40px rgba(74,222,128,0.3), 0 0 60px rgba(74,222,128,0.2);
+}
+
+.toggle-border.off {
+  border-color: #ef4444;
+  box-shadow: inset 0 0 40px rgba(239,68,68,0.3), 0 0 60px rgba(239,68,68,0.2);
+}
+
+/* Value Editor Modal */
+.value-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  background: rgba(18,23,34,0.98);
+  border: 2px solid var(--accent);
+  border-radius: 20px;
+  padding: 32px;
+  display: none;
+  z-index: 200;
+  min-width: 280px;
+  text-align: center;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.value-modal.active {
+  display: block;
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.value-title {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.value-number {
+  font-size: 56px;
+  font-weight: 700;
+  color: var(--accent);
+  margin: 20px 0;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.value-instruction {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.gesture-icon {
+  width: 40px;
+  height: 20px;
+  border: 2px solid var(--accent);
+  border-radius: 10px;
+  position: relative;
+  opacity: 0.6;
+}
+
+.gesture-icon::after {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--accent);
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: slideHint 2s ease-in-out infinite;
+}
+
+@keyframes slideHint {
+  0%, 100% { transform: translate(-50%, -50%) translateX(-8px); }
+  50% { transform: translate(-50%, -50%) translateX(8px); }
+}
+
+/* Touch Feedback */
+.touch-ripple {
+  position: fixed;
+  width: 100px;
+  height: 100px;
+  border: 3px solid var(--accent);
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.5);
+  z-index: 500;
+}
+
+.touch-ripple.active {
+  animation: ripple 0.6s ease-out;
+}
+
+@keyframes ripple {
+  0% {
+    opacity: 0.8;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(2);
+  }
+}
+
+/* Fullscreen Button */
+#fullscreenBtn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 101;
+}
+
+/* Panel Overlays */
+.mobile-panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--panel);
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 150;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.mobile-panel.active {
+  transform: translateY(0);
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.panel-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.panel-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--btn);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+/* Control Groups in Panels */
+.control-group-mobile {
+  margin-bottom: 24px;
+}
+
+.control-row-mobile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.control-label-mobile {
+  font-size: 14px;
+  color: var(--fg);
+}
+
+.control-value-mobile {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--accent);
+  min-width: 60px;
+  text-align: right;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+  width: 48px;
+  height: 28px;
+  background: var(--btn);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.toggle-switch.active {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: var(--fg);
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  transition: all 0.3s ease;
+}
+
+.toggle-switch.active::after {
+  left: 22px;
+  background: var(--bg);
+}
+
+/* Color Picker Mobile */
+.color-picker-mobile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.color-preview {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 2px solid var(--border);
+}
+
+/* Slider Controls */
+.slider-control-mobile {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+}
+
+.slider-mobile {
+  flex: 1;
+  height: 6px;
+  background: var(--slider-bg);
+  border-radius: 3px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.slider-mobile::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 24px;
+  height: 24px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* Hide unnecessary elements */
+.modal, .side-panel {
+  display: none !important;
+}
+
+/* Action Buttons */
+.action-btn {
+  width: 100%;
+  padding: 16px;
+  margin: 8px 0;
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.action-btn:active {
+  transform: scale(0.98);
+}
+</style>
+</head>
+<body>
+  <div class="mobile-frame">
+    <div class="mobile-screen">
+      <div id="appContainer">
+        <!-- Toggle State Border -->
+        <div class="toggle-border" id="toggleBorder"></div>
+        
+        <!-- Canvas Container -->
+        <div id="canvasContainer">
+          <div id="artboard">
+            <svg id="stage" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"></svg>
+          </div>
+        </div>
+
+        <!-- Fullscreen Button -->
+        <button id="fullscreenBtn" class="btn" title="Toggle Fullscreen">⛶</button>
+
+        <!-- Mobile Bottom Navigation -->
+        <nav class="mobile-nav">
+          <button class="nav-button" data-control="text" onclick="selectControl('text')">
+            <span class="nav-icon">T</span>
+            <span class="nav-label">Text</span>
+          </button>
+          <button class="nav-button" data-control="grid" onclick="selectControl('grid')">
+            <span class="nav-icon">⋮⋮</span>
+            <span class="nav-label">Grid</span>
+          </button>
+          <button class="nav-button" data-control="color" onclick="selectControl('color')">
+            <span class="nav-icon">◐</span>
+            <span class="nav-label">Color</span>
+          </button>
+          <button class="nav-button" data-control="style" onclick="selectControl('style')">
+            <span class="nav-icon">◈</span>
+            <span class="nav-label">Style</span>
+          </button>
+          <button class="nav-button" data-control="export" onclick="selectControl('export')">
+            <span class="nav-icon">↓</span>
+            <span class="nav-label">Export</span>
+          </button>
+        </nav>
+
+        <!-- Value Editor Modal -->
+        <div class="value-modal" id="valueModal">
+          <div class="value-title" id="valueTitle">Rows</div>
+          <div class="value-number" id="valueNumber">15</div>
+          <div class="value-instruction">
+            <div class="gesture-icon"></div>
+            <span>Swipe horizontally to adjust</span>
+          </div>
+        </div>
+
+        <!-- Touch Feedback -->
+        <div class="touch-ripple" id="touchRipple"></div>
+
+        <!-- Mobile Panels -->
+        <div class="mobile-panel" id="textPanel">
+          <div class="panel-header">
+            <h3 class="panel-title">Text Settings</h3>
+            <button class="panel-close" onclick="closePanel('textPanel')">×</button>
+          </div>
+          <div class="control-group-mobile">
+            <textarea id="phraseInput" placeholder="Enter your text here..." style="width:100%;height:120px;background:var(--bg);color:var(--fg);border:1px solid var(--border);border-radius:8px;padding:12px;">Here's to the crazy ones, the misfits, the rebels, the troublemakers, the round pegs in the square holes... the ones who see things differently - they're not fond of rules... You can quote them, disagree with them, glorify or vilify them, but the only thing you can't do is ignore them because they change things... they push the human race forward, and while some may see them as the crazy ones, we see genius, because the ones who are crazy enough to think that they can change the world, are the ones who do. - Steve Jobs, 1997</textarea>
+          </div>
+          <div class="control-group-mobile">
+            <div class="control-row-mobile">
+              <span class="control-label-mobile">Include Spaces</span>
+              <div class="toggle-switch" id="includeSpacesToggle" onclick="toggleSwitch('includeSpaces')"></div>
+            </div>
+            <div class="control-row-mobile">
+              <span class="control-label-mobile">First 2 Ligatures</span>
+              <div class="toggle-switch" id="firstTwoLigaturesToggle" onclick="toggleSwitch('firstTwoLigatures')"></div>
+            </div>
+            <div class="control-row-mobile">
+              <span class="control-label-mobile">Special Ligatures</span>
+              <div class="toggle-switch" id="specialLigaturesToggle" onclick="toggleSwitch('specialLigatures')"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mobile-panel" id="gridPanel">
+          <div class="panel-header">
+            <h3 class="panel-title">Grid Settings</h3>
+            <button class="panel-close" onclick="closePanel('gridPanel')">×</button>
+          </div>
+          <div class="control-group-mobile">
+            <div class="control-row-mobile" onclick="editValue('rows', 1, 50, 15)">
+              <span class="control-label-mobile">Rows</span>
+              <span class="control-value-mobile" id="rowsValue">15</span>
+            </div>
+            <div class="control-row-mobile">
+              <span class="control-label-mobile">Auto Rows</span>
+              <div class="toggle-switch active" id="autoRowsToggle" onclick="toggleSwitch('autoRows')"></div>
+            </div>
+            <div class="control-row-mobile" onclick="editValue('density', 0, 100, 52)">
+              <span class="control-label-mobile">Half Tile</span>
+              <span class="control-value-mobile" id="densityValue">52%</span>
+            </div>
+            <div class="control-row-mobile" onclick="editValue('doubleWidth', 0, 100, 81)">
+              <span class="control-label-mobile">Double Tile</span>
+              <span class="control-value-mobile" id="doubleWidthValue">81%</span>
+            </div>
+            <div class="control-row-mobile" onclick="editValue('padding', 0, 10, 4)">
+              <span class="control-label-mobile">Cell Padding</span>
+              <span class="control-value-mobile" id="paddingValue">4</span>
+            </div>
+            <div class="control-row-mobile" onclick="editValue('margin', 0, 200, 20)">
+              <span class="control-label-mobile">Canvas Margin</span>
+              <span class="control-value-mobile" id="marginValue">20</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mobile-panel" id="colorPanel">
+          <div class="panel-header">
+            <h3 class="panel-title">Color Settings</h3>
+            <button class="panel-close" onclick="closePanel('colorPanel')">×</button>
+          </div>
+          <div class="control-group-mobile">
+            <div class="control-row-mobile">
+              <span class="control-label-mobile">Canvas Background</span>
+              <div class="color-picker-mobile">
+                <input type="color" id="bgColorPicker" class="picker" value="#000000">
+                <div class="color-preview" id="bgPreview" style="background:#000000;"></div>
+              </div>
+            </div>
+            <div class="control-row-mobile" onclick="editValue('hueCenter', 0, 100, 0)">
+              <span class="control-label-mobile">Hue Center</span>
+              <span class="control-value-mobile" id="hueCenterValue">0%</span>
+            </div>
+            <div class="control-row-mobile" onclick="editValue('hueRadius', 0, 50, 30)">
+              <span class="control-label-mobile">Hue Radius</span>
+              <span class="control-value-mobile" id="hueRadiusValue">30%</span>
+            </div>
+            <div class="control-row-mobile" onclick="editValue('saturation', 0, 200, 70)">
+              <span class="control-label-mobile">Saturation</span>
+              <span class="control-value-mobile" id="saturationValue">70%</span>
+            </div>
+            <div class="control-row-mobile" onclick="editValue('brightness', 0, 200, 50)">
+              <span class="control-label-mobile">Brightness</span>
+              <span class="control-value-mobile" id="brightnessValue">50%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mobile-panel" id="stylePanel">
+          <div class="panel-header">
+            <h3 class="panel-title">Style Settings</h3>
+            <button class="panel-close" onclick="closePanel('stylePanel')">×</button>
+          </div>
+          <div class="control-group-mobile">
+            <div class="control-row-mobile">
+              <span class="control-label-mobile">Overlay Text</span>
+              <div class="toggle-switch active" id="overlayTextToggle" onclick="toggleSwitch('overlayText')"></div>
+            </div>
+            <div class="control-row-mobile" onclick="editValue('textOpacity', 0, 100, 100)">
+              <span class="control-label-mobile">Text Opacity</span>
+              <span class="control-value-mobile" id="textOpacityValue">100%</span>
+            </div>
+            <div class="control-row-mobile" onclick="editValue('firstThickness', 1, 20, 2)">
+              <span class="control-label-mobile">Initial Weight</span>
+              <span class="control-value-mobile" id="firstThicknessValue">2</span>
+            </div>
+            <div class="control-row-mobile">
+              <span class="control-label-mobile">Corner Mode</span>
+              <div class="toggle-switch" id="cornerModeToggle" onclick="toggleCornerMode()"></div>
+            </div>
+            <div class="control-row-mobile" onclick="editValue('chamfer', 0, 100, 40)">
+              <span class="control-label-mobile">Chamfer</span>
+              <span class="control-value-mobile" id="chamferValue">40</span>
+            </div>
+            <div class="control-row-mobile" onclick="editValue('bevel', 0, 100, 60)">
+              <span class="control-label-mobile">Bevel</span>
+              <span class="control-value-mobile" id="bevelValue">60%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mobile-panel" id="exportPanel">
+          <div class="panel-header">
+            <h3 class="panel-title">Export Options</h3>
+            <button class="panel-close" onclick="closePanel('exportPanel')">×</button>
+          </div>
+          <div class="control-group-mobile">
+            <button class="action-btn" onclick="window.exportSVG('current')">Save SVG (Current)</button>
+            <button class="action-btn" onclick="window.exportSVG('screen')">Save SVG (Screen)</button>
+            <button class="action-btn" onclick="window.exportCopy('current')">Copy SVG (Current)</button>
+            <button class="action-btn" onclick="window.exportCopy('screen')">Copy SVG (Screen)</button>
+            <button class="action-btn" onclick="window.exportPNG('current')">Save Image (Current)</button>
+            <button class="action-btn" onclick="window.exportPNG('screen')">Save Image (Screen)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden elements for compatibility -->
+  <div style="display:none">
+    <div id="sidebarWrapper"><div id="sidebar"></div></div>
+    <div id="toggleWrapper"></div>
+    <input type="checkbox" id="includeSpaces">
+    <input type="checkbox" id="firstTwoLigatures" checked>
+    <input type="checkbox" id="specialLigatures" checked>
+    <input type="checkbox" id="autoRows" checked>
+    <input type="checkbox" id="overlayText" checked>
+    <input type="checkbox" id="screenSize" checked>
+    <input type="checkbox" id="customSpaceColor">
+    <input type="checkbox" id="replaceSpaceChar">
+    <input type="checkbox" id="syncOtherToggle" checked>
+    <input type="radio" id="cornerTile" name="cornerMode" value="tile" checked>
+    <input type="radio" id="cornerBevel" name="cornerMode" value="bevel">
+    <input type="radio" id="bgModeColor" name="bgMode" value="color">
+    <input type="radio" id="bgModeSingle" name="bgMode" value="single" checked>
+    <input type="radio" id="applyBg" name="applyColor" value="background" checked>
+    <input type="radio" id="applyText" name="applyColor" value="text">
+    <input type="radio" id="gridTess" name="gridType" value="tessellated" checked>
+    <input type="radio" id="gridBasic" name="gridType" value="basic">
+    <input type="range" id="rowSlider" min="1" max="50" value="15">
+    <input type="range" id="densitySlider" min="0" max="100" value="52">
+    <input type="range" id="doubleWidthSlider" min="0" max="100" value="81">
+    <input type="range" id="paddingSlider" min="0" max="10" value="4">
+    <input type="range" id="marginSlider" min="0" max="200" value="20">
+    <input type="range" id="overlayMarginSlider" min="0" max="30" value="5">
+    <input type="range" id="textOpacitySlider" min="0" max="100" value="100">
+    <input type="range" id="firstThickness" min="1" max="20" value="2">
+    <input type="range" id="otherThickness" min="1" max="20" value="2">
+    <input type="range" id="chamferSlider" min="0" max="100" value="40">
+    <input type="range" id="bevelSlider" min="0" max="1" step="0.01" value="0.6">
+    <input type="range" id="hueCenter" min="0" max="100" value="0">
+    <input type="range" id="hueRadius" min="0" max="50" value="30">
+    <input type="range" id="saturationSlider" min="0" max="200" value="70">
+    <input type="range" id="contrastSlider" min="0" max="200" value="50">
+    <input type="range" id="brightnessSlider" min="0" max="200" value="50">
+    <input type="range" id="tileOpacitySlider" min="0" max="100" value="100">
+    <input type="number" id="canvasWidth" value="1200">
+    <input type="number" id="canvasHeight" value="800">
+    <input type="color" id="firstLetterColorPicker" value="#ffffff">
+    <input type="color" id="otherTextColorPicker" value="#bfbfbf">
+    <input type="color" id="cellBgColorPicker" value="#000000">
+    <input type="color" id="spaceColorPicker" value="#404040">
+    <input type="text" id="bgColorText" value="#000000">
+    <input type="text" id="firstLetterColorText" value="#ffffff">
+    <input type="text" id="otherTextColorText" value="#bfbfbf">
+    <input type="text" id="cellBgColorText" value="#000000">
+    <input type="text" id="spaceColorText" value="#404040">
+    <input type="text" id="replaceCharText" value="_">
+    <input type="text" id="specialLigaturesList" value="THE, OR, AND, OF, TO, IN, IT, IS, AS, AT, BE, WE, HE, SO, ON, AN">
+    <div id="singleControls"></div>
+    <div id="colorControls"></div>
+    <div id="tessControls"></div>
+    <div id="spaceControls"></div>
+    <div id="manualSize"></div>
+    <div id="overlayMarginRow"></div>
+    <div id="spaceColorRow"></div>
+    <div id="replaceCharRow"></div>
+  </div>
+
+  <!-- Mobile Control Script -->
+  <script>
+    let activeControl = null;
+    let activePanel = null;
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartValue = 0;
+    let currentEditConfig = null;
+
+    // Control selection
+    function selectControl(control) {
+      // Remove active state from all buttons
+      document.querySelectorAll('.nav-button').forEach(btn => {
+        btn.classList.remove('active');
+      });
+
+      // Close any open panel
+      if (activePanel) {
+        closePanel(activePanel);
+      }
+
+      // Set active button
+      const button = document.querySelector(`[data-control="${control}"]`);
+      if (button) {
+        button.classList.add('active');
+      }
+
+      // Open corresponding panel
+      const panelMap = {
+        'text': 'textPanel',
+        'grid': 'gridPanel',
+        'color': 'colorPanel',
+        'style': 'stylePanel',
+        'export': 'exportPanel'
+      };
+
+      if (panelMap[control]) {
+        openPanel(panelMap[control]);
+      }
+
+      activeControl = control;
+    }
+
+    // Panel management
+    function openPanel(panelId) {
+      const panel = document.getElementById(panelId);
+      if (panel) {
+        panel.classList.add('active');
+        activePanel = panelId;
+      }
+    }
+
+    function closePanel(panelId) {
+      const panel = document.getElementById(panelId);
+      if (panel) {
+        panel.classList.remove('active');
+      }
+      
+      // Remove active state from buttons
+      document.querySelectorAll('.nav-button').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      
+      activePanel = null;
+      activeControl = null;
+    }
+
+    // Value editing
+    function editValue(name, min, max, defaultValue) {
+      currentEditConfig = { name, min, max, defaultValue };
+      
+      // Get current value from corresponding slider
+      const sliderMap = {
+        'rows': 'rowSlider',
+        'density': 'densitySlider',
+        'doubleWidth': 'doubleWidthSlider',
+        'padding': 'paddingSlider',
+        'margin': 'marginSlider',
+        'textOpacity': 'textOpacitySlider',
+        'firstThickness': 'firstThickness',
+        'chamfer': 'chamferSlider',
+        'bevel': 'bevelSlider',
+        'hueCenter': 'hueCenter',
+        'hueRadius': 'hueRadius',
+        'saturation': 'saturationSlider',
+        'brightness': 'brightnessSlider'
+      };
+      
+      const slider = document.getElementById(sliderMap[name]);
+      const currentValue = slider ? slider.value : defaultValue;
+      
+      // Show value modal
+      const modal = document.getElementById('valueModal');
+      const title = document.getElementById('valueTitle');
+      const number = document.getElementById('valueNumber');
+      
+      title.textContent = name.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+      number.textContent = name === 'bevel' ? `${Math.round(currentValue * 100)}%` : 
+                          (name.includes('density') || name.includes('Width') || name.includes('Opacity') || 
+                           name.includes('hue') || name.includes('saturation') || name.includes('brightness')) ? 
+                          `${currentValue}%` : currentValue;
+      
+      modal.classList.add('active');
+      
+      // Store initial value for dragging
+      dragStartValue = parseFloat(currentValue);
+    }
+
+    // Toggle switches
+    function toggleSwitch(name) {
+      const toggle = document.getElementById(`${name}Toggle`);
+      const checkbox = document.getElementById(name);
+      
+      if (toggle && checkbox) {
+        checkbox.checked = !checkbox.checked;
+        toggle.classList.toggle('active', checkbox.checked);
+        
+        // Trigger change event
+        checkbox.dispatchEvent(new Event('change'));
+        
+        // Regenerate if needed
+        if (window.generateGrid) {
+          if (window.$('#autoRows') && window.$('#autoRows').checked) {
+            window.autoPickRowsAndRedraw();
+          } else {
+            window.currentCells = null;
+            window.generateGrid(true);
+          }
+        }
+      }
+    }
+
+    // Toggle corner mode
+    function toggleCornerMode() {
+      const toggle = document.getElementById('cornerModeToggle');
+      const tileRadio = document.getElementById('cornerTile');
+      const bevelRadio = document.getElementById('cornerBevel');
+      
+      const isBevel = bevelRadio.checked;
+      
+      if (isBevel) {
+        tileRadio.checked = true;
+        toggle.classList.remove('active');
+      } else {
+        bevelRadio.checked = true;
+        toggle.classList.add('active');
+      }
+      
+      // Trigger change event
+      const evt = new Event('change');
+      if (isBevel) {
+        tileRadio.dispatchEvent(evt);
+      } else {
+        bevelRadio.dispatchEvent(evt);
+      }
+      
+      // Show toggle border animation
+      const border = document.getElementById('toggleBorder');
+      border.classList.remove('on', 'off');
+      border.classList.add(isBevel ? 'off' : 'on');
+      setTimeout(() => {
+        border.classList.remove('on', 'off');
+      }, 800);
+    }
+
+    // Touch/drag handling for value editing
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    document.addEventListener('touchstart', handleTouchStart, { passive: false });
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd, { passive: false });
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    function handleTouchStart(e) {
+      if (!currentEditConfig) return;
+      
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      isDragging = true;
+      
+      // Show touch ripple
+      const ripple = document.getElementById('touchRipple');
+      ripple.style.left = touchStartX + 'px';
+      ripple.style.top = touchStartY + 'px';
+      ripple.classList.add('active');
+      
+      e.preventDefault();
+    }
+
+    function handleTouchMove(e) {
+      if (!isDragging || !currentEditConfig) return;
+      
+      const deltaX = e.touches[0].clientX - touchStartX;
+      const { name, min, max } = currentEditConfig;
+      
+      // Calculate new value based on drag distance
+      const range = max - min;
+      const sensitivity = range / 200; // 200px for full range
+      const change = deltaX * sensitivity;
+      const newValue = Math.max(min, Math.min(max, dragStartValue + change));
+      
+      // Update slider
+      const sliderMap = {
+        'rows': 'rowSlider',
+        'density': 'densitySlider',
+        'doubleWidth': 'doubleWidthSlider',
+        'padding': 'paddingSlider',
+        'margin': 'marginSlider',
+        'textOpacity': 'textOpacitySlider',
+        'firstThickness': 'firstThickness',
+        'chamfer': 'chamferSlider',
+        'bevel': 'bevelSlider',
+        'hueCenter': 'hueCenter',
+        'hueRadius': 'hueRadius',
+        'saturation': 'saturationSlider',
+        'brightness': 'brightnessSlider'
+      };
+      
+      const slider = document.getElementById(sliderMap[name]);
+      if (slider) {
+        slider.value = newValue;
+        slider.dispatchEvent(new Event('input'));
+      }
+      
+      // Update display
+      const number = document.getElementById('valueNumber');
+      number.textContent = name === 'bevel' ? `${Math.round(newValue * 100)}%` : 
+                          (name.includes('density') || name.includes('Width') || name.includes('Opacity') || 
+                           name.includes('hue') || name.includes('saturation') || name.includes('brightness')) ? 
+                          `${Math.round(newValue)}%` : Math.round(newValue);
+      
+      // Update value in panel
+      const valueSpan = document.getElementById(`${name}Value`);
+      if (valueSpan) {
+        valueSpan.textContent = number.textContent;
+      }
+      
+      e.preventDefault();
+    }
+
+    function handleTouchEnd(e) {
+      if (!isDragging) return;
+      
+      isDragging = false;
+      
+      // Hide touch ripple
+      const ripple = document.getElementById('touchRipple');
+      ripple.classList.remove('active');
+      
+      // Hide value modal after a delay
+      setTimeout(() => {
+        const modal = document.getElementById('valueModal');
+        modal.classList.remove('active');
+        currentEditConfig = null;
+      }, 500);
+      
+      e.preventDefault();
+    }
+
+    function handleMouseDown(e) {
+      if (!currentEditConfig) return;
+      touchStartX = e.clientX;
+      touchStartY = e.clientY;
+      isDragging = true;
+      e.preventDefault();
+    }
+
+    function handleMouseMove(e) {
+      if (!isDragging || !currentEditConfig) return;
+      
+      const deltaX = e.clientX - touchStartX;
+      const { name, min, max } = currentEditConfig;
+      
+      const range = max - min;
+      const sensitivity = range / 200;
+      const change = deltaX * sensitivity;
+      const newValue = Math.max(min, Math.min(max, dragStartValue + change));
+      
+      const sliderMap = {
+        'rows': 'rowSlider',
+        'density': 'densitySlider',
+        'doubleWidth': 'doubleWidthSlider',
+        'padding': 'paddingSlider',
+        'margin': 'marginSlider',
+        'textOpacity': 'textOpacitySlider',
+        'firstThickness': 'firstThickness',
+        'chamfer': 'chamferSlider',
+        'bevel': 'bevelSlider',
+        'hueCenter': 'hueCenter',
+        'hueRadius': 'hueRadius',
+        'saturation': 'saturationSlider',
+        'brightness': 'brightnessSlider'
+      };
+      
+      const slider = document.getElementById(sliderMap[name]);
+      if (slider) {
+        slider.value = newValue;
+        slider.dispatchEvent(new Event('input'));
+      }
+      
+      const number = document.getElementById('valueNumber');
+      number.textContent = name === 'bevel' ? `${Math.round(newValue * 100)}%` : 
+                          (name.includes('density') || name.includes('Width') || name.includes('Opacity') || 
+                           name.includes('hue') || name.includes('saturation') || name.includes('brightness')) ? 
+                          `${Math.round(newValue)}%` : Math.round(newValue);
+      
+      const valueSpan = document.getElementById(`${name}Value`);
+      if (valueSpan) {
+        valueSpan.textContent = number.textContent;
+      }
+      
+      e.preventDefault();
+    }
+
+    function handleMouseUp(e) {
+      if (!isDragging) return;
+      
+      isDragging = false;
+      
+      setTimeout(() => {
+        const modal = document.getElementById('valueModal');
+        modal.classList.remove('active');
+        currentEditConfig = null;
+      }, 500);
+      
+      e.preventDefault();
+    }
+
+    // Initialize UI state
+    window.addEventListener('load', async () => {
+      // Wait for modules to load
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Initialize default text
+      const textarea = document.getElementById('phraseInput');
+      if (!textarea.value && window.DEFAULT_QUOTE) {
+        textarea.value = window.DEFAULT_QUOTE;
+      }
+      
+      // Sync toggle states with checkboxes
+      document.getElementById('includeSpacesToggle').classList.toggle('active', document.getElementById('includeSpaces').checked);
+      document.getElementById('firstTwoLigaturesToggle').classList.toggle('active', document.getElementById('firstTwoLigatures').checked);
+      document.getElementById('specialLigaturesToggle').classList.toggle('active', document.getElementById('specialLigatures').checked);
+      document.getElementById('autoRowsToggle').classList.toggle('active', document.getElementById('autoRows').checked);
+      document.getElementById('overlayTextToggle').classList.toggle('active', document.getElementById('overlayText').checked);
+      document.getElementById('cornerModeToggle').classList.toggle('active', document.getElementById('cornerBevel').checked);
+      
+      // Update color previews
+      document.getElementById('bgColorPicker').addEventListener('input', (e) => {
+        document.getElementById('bgPreview').style.background = e.target.value;
+        document.getElementById('bgColorText').value = e.target.value;
+      });
+      
+      // Initialize canvas sizing
+      if (window.applyCanvasSizingUI) {
+        window.applyCanvasSizingUI();
+      }
+      
+      // Initialize characters
+      if (window.initializeDynamicCharacters) {
+        await window.initializeDynamicCharacters();
+      }
+      
+      // Initialize corners if needed
+      if (typeof window.updateCornersDynamic === 'function') {
+        window.updateCornersDynamic();
+        if (typeof window.setCornerMode === 'function') {
+          window.setCornerMode('tile');
+        }
+      }
+      
+      // Auto pick rows and generate initial grid
+      if (window.autoPickRowsAndRedraw) {
+        window.autoPickRowsAndRedraw();
+      } else if (window.generateGrid) {
+        window.currentCells = null;
+        window.generateGrid(true);
+      }
+      
+      // Regenerate on space key
+      document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && !e.target.matches('input,textarea')) {
+          e.preventDefault();
+          if (window.generateGrid) {
+            window.currentCells = null;
+            window.generateGrid(true);
+          }
+        }
+      });
+      
+      // Handle textarea input changes
+      if (textarea && window.autoPickRowsAndRedraw) {
+        textarea.addEventListener('input', window.autoPickRowsAndRedraw);
+      }
+    });
+  </script>
+
+  <!-- Load modules in order -->
+  <script src="tileData.js"></script>
+  <script src="geometry.js"></script>
+  <script src="dynamicCharLoader.js"></script>
+  <script src="tessellationEngine.js"></script>
+  <script src="dynamicRenderer.js"></script>
+  <script src="dynamicUI.js"></script>
+  <script src="dynamicApp.js"></script>
+</body>
+</html>
